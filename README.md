@@ -1,1 +1,4 @@
 # INTERNSHIP1
+
+DAY 1
+
