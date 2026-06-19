@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rrishik Jiji | Cyber Portfolio</title>
+
+<style>
+:root{
+    --bg:#050816;
+    --card:#111827;
+    --primary:#00ffcc;
+    --secondary:#ff00ff;
+    --text:#ffffff;
+    --gray:#94a3b8;
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+}
+
+html{
+    scroll-behavior:smooth;
+}
+
+body{
+    background:var(--bg);
+    color:var(--text);
+    font-family:'Trebuchet MS',sans-serif;
+}
+
+/* Navigation */
+nav{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:20px 8%;
+    position:fixed;
+    width:100%;
+    top:0;
+    background:rgba(5,8,22,0.9);
+    backdrop-filter:blur(8px);
+    z-index:100;
+}
+
+.logo{
+    color:var(--primary);
+    font-size:1.5rem;
+    font-weight:bold;
+    text-shadow:0 0 10px var(--primary);
+}
+
+nav ul{
+    display:flex;
+    list-style:none;
+    gap:25px;
+}
+
+nav a{
+    color:white;
+    text-decoration:none;
+    transition:.3s;
+}
+
+nav a:hover{
+    color:var(--primary);
+}
+
+/* Hero */
+.hero{
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    text-align:center;
+    padding:20px;
+    background:
+    radial-gradient(circle at top right,#00ffcc22,transparent 30%),
+    radial-gradient(circle at bottom left,#ff00ff22,transparent 30%);
+}
+
+.hero h1{
+    font-size:4rem;
+    margin-bottom:15px;
+    text-shadow:0 0 20px var(--primary);
+}
+
+.hero span{
+    color:var(--primary);
+}
+
+.hero h3{
+    color:var(--secondary);
+    margin-bottom:20px;
+}
+
+.hero p{
+    max-width:700px;
+    color:var(--gray);
+    margin:auto;
+    margin-bottom:30px;
+}
+
+.btn{
+    display:inline-block;
+    padding:12px 30px;
+    border:2px solid var(--primary);
+    color:var(--primary);
+    text-decoration:none;
+    border-radius:30px;
+    transition:.3s;
+}
+
+.btn:hover{
+    background:var(--primary);
+    color:black;
+    box-shadow:0 0 20px var(--primary);
+}
+
+/* Sections */
+section{
+    padding:100px 8%;
+}
+
+.title{
+    text-align:center;
+    font-size:2.5rem;
+    margin-bottom:50px;
+    color:var(--primary);
+}
+
+/* About */
+.about{
+    background:var(--card);
+    padding:30px;
+    border-radius:20px;
+    border:1px solid var(--primary);
+    box-shadow:0 0 15px rgba(0,255,204,0.2);
+}
+
+/* Skills */
+.skills{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+    gap:20px;
+}
+
+.skill{
+    background:var(--card);
+    padding:25px;
+    text-align:center;
+    border-radius:15px;
+    border:1px solid transparent;
+    transition:.3s;
+}
+
+.skill:hover{
+    border-color:var(--primary);
+    transform:translateY(-8px);
+    box-shadow:0 0 15px rgba(0,255,204,.4);
+}
+
+/* Projects */
+.projects{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(320px,1fr));
+    gap:25px;
+}
+
+.project{
+    background:var(--card);
+    border-radius:15px;
+    overflow:hidden;
+    transition:.3s;
+}
+
+.project:hover{
+    transform:translateY(-10px);
+}
+
+.project-img{
+    height:180px;
+    background:linear-gradient(
+        135deg,
+        var(--primary),
+        var(--secondary)
+    );
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    color:black;
+    font-weight:bold;
+}
+
+.project-content{
+    padding:20px;
+}
+
+.project-content p{
+    color:var(--gray);
+    margin:15px 0;
+}
+
+/* Stats */
+.stats{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:20px;
+}
+
+.stat{
+    background:var(--card);
+    text-align:center;
+    padding:30px;
+    border-radius:15px;
+}
+
+.stat h2{
+    color:var(--primary);
+    font-size:2rem;
+}
+
+/* Contact */
+.contact{
+    max-width:700px;
+    margin:auto;
+}
+
+.contact input,
+.contact textarea{
+    width:100%;
+    padding:15px;
+    margin-bottom:15px;
+    border:none;
+    border-radius:10px;
+    background:#1e293b;
+    color:white;
+}
+
+/* Footer */
+footer{
+    text-align:center;
+    padding:25px;
+    background:#020617;
+    color:var(--gray);
+}
+
+/* Mobile */
+@media(max-width:768px){
+
+.hero h1{
+    font-size:2.5rem;
+}
+
+nav{
+    flex-direction:column;
+    gap:15px;
+}
+
+nav ul{
+    flex-wrap:wrap;
+    justify-content:center;
+}
+}
+</style>
+</head>
+
+<body>
+
+<nav>
+    <div class="logo">RJ.EXE</div>
+
+    <ul>
+        <li><a href="#about">About</a></li>
+        <li><a href="#skills">Skills</a></li>
+        <li><a href="#projects">Projects</a></li>
+        <li><a href="#stats">Stats</a></li>
+        <li><a href="#contact">Contact</a></li>
+    </ul>
+</nav>
+
+<section class="hero">
+    <div>
+        <h1>Hi, I'm <span>Rrishik Jiji</span></h1>
+
+        <h3>IoT Developer • ECE Student • Tech Explorer</h3>
+
+        <p>
+            Building futuristic IoT systems using ESP32, Arduino,
+            cloud platforms, and modern web technologies.
+        </p>
+
+        <a href="#projects" class="btn">View Projects</a>
+    </div>
+</section>
+
+<section id="about">
+    <h2 class="title">About Me</h2>
+
+    <div class="about">
+        <p>
+            Electronics & Communication Engineering student passionate
+            about embedded systems, PCB design, IoT applications,
+            and innovative web experiences.
+        </p>
+    </div>
+</section>
+
+<section id="skills">
+    <h2 class="title">Skills Matrix</h2>
+
+    <div class="skills">
+        <div class="skill">C Programming</div>
+        <div class="skill">Python</div>
+        <div class="skill">ESP32</div>
+        <div class="skill">Arduino</div>
+        <div class="skill">HTML</div>
+        <div class="skill">CSS</div>
+        <div class="skill">Git & GitHub</div>
+        <div class="skill">KiCad</div>
+    </div>
+</section>
+
+<section id="projects">
+    <h2 class="title">Featured Projects</h2>
+
+    <div class="projects">
+
+        <div class="project">
+            <div class="project-img">ESP32</div>
+            <div class="project-content">
+                <h3>Temperature Monitoring System</h3>
+                <p>Cloud-connected IoT monitoring solution.</p>
+            </div>
+        </div>
+
+        <div class="project">
+            <div class="project-img">SMART HOME</div>
+            <div class="project-content">
+                <h3>Home Automation</h3>
+                <p>Remote appliance control using WiFi and ESP32.</p>
+            </div>
+        </div>
+
+    </div>
+</section>
+
+<section id="stats">
+    <h2 class="title">GitHub Statistics</h2>
+
+    <div class="stats">
+        <div class="stat">
+            <h2>25+</h2>
+            <p>Repositories</p>
+        </div>
+
+        <div class="stat">
+            <h2>100+</h2>
+            <p>Contributions</p>
+        </div>
+
+        <div class="stat">
+            <h2>12+</h2>
+            <p>Projects Completed</p>
+        </div>
+    </div>
+</section>
+
+<section id="contact">
+    <h2 class="title">Contact Terminal</h2>
+
+    <div class="contact">
+        <input type="text" placeholder="Enter Name">
+        <input type="email" placeholder="Enter Email">
+        <textarea rows="5" placeholder="Type Message"></textarea>
+
+        <a href="#" class="btn">Send Transmission</a>
+    </div>
+</section>
+
+<footer>
+    © 2026 Rrishik Jiji | Cyberpunk Portfolio
+</footer>
+
+</body>
+</html>
