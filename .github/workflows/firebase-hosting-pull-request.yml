@@ -18,3 +18,4 @@ jobs:
           repoToken: ${{ secrets.GITHUB_TOKEN }}
           firebaseServiceAccount: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_ESP32PROJECT_88E4A }}
           projectId: esp32project-88e4a
+          entryPoint: DAY08/LEDWEB/internproject
