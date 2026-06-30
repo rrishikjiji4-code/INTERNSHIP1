@@ -1,0 +1,880 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GestureAI · Motion Classifier</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:       #0B0F14;
+      --s1:       #1E2A39;
+      --s2:       #162030;
+      --s3:       #111820;
+      --border:   rgba(157,180,198,0.15);
+      --border2:  rgba(157,180,198,0.28);
+      --text:     #F5F8FA;
+      --muted:    #5C7386;
+      --muted2:   #D6DEE6;
+      --cyan:     #9DB4C6;
+      --green:    #9DB4C6;
+      --purple:   #9DB4C6;
+      --amber:    #D6DEE6;
+      --danger:   #ff6b6b;
+      --orange:   #9DB4C6;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      font-size: 14px;
+      min-height: 100dvh;
+    }
+
+    /* ── HEADER ── */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 14px 16px;
+      background: var(--s1);
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+    }
+    .hdr-left { display: flex; align-items: center; gap: 12px; }
+    .hdr-icon {
+      width: 38px; height: 38px; border-radius: 10px;
+      background: linear-gradient(135deg, #1E2A39, #9DB4C6);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px;
+    }
+    .hdr-title { font-size: 1.05rem; font-weight: 700; letter-spacing: -.01em; }
+    .hdr-title span { color: var(--cyan); }
+    .hdr-sub { font-size: .65rem; color: var(--muted2); letter-spacing: .1em; text-transform: uppercase; margin-top: 1px; }
+    .sensor-pill {
+      display: flex; align-items: center; gap: 7px;
+      padding: 6px 14px; border-radius: 999px;
+      border: 1px solid rgba(92,115,134,.4);
+      background: rgba(92,115,134,.10);
+      font-size: .75rem; font-weight: 600; color: var(--muted2);
+      transition: all .4s;
+    }
+    .sensor-pill.online {
+      border-color: rgba(157,180,198,.45);
+      background: rgba(157,180,198,.12);
+      color: var(--cyan);
+    }
+    .sensor-pill .sdot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: currentColor;
+    }
+    .sensor-pill.online .sdot { animation: blink 1.4s ease-in-out infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+    /* ── PAGE ── */
+    .page { max-width: 540px; margin: 0 auto; padding: 16px 14px 48px; display: flex; flex-direction: column; gap: 14px; }
+
+    /* ── PERMISSION BANNER ── */
+    .perm-banner {
+      background: linear-gradient(135deg, rgba(157,180,198,.07), rgba(30,42,57,.9));
+      border: 1px solid rgba(157,180,198,.20);
+      border-radius: 16px;
+      padding: 18px 18px 16px;
+    }
+    .perm-top { display: flex; align-items: flex-start; gap: 14px; margin-bottom: 14px; }
+    .perm-icon {
+      width: 44px; height: 44px; flex-shrink: 0;
+      border-radius: 12px;
+      background: rgba(0,176,255,.12);
+      border: 1px solid rgba(157,180,198,.20);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+    .perm-title { font-size: .95rem; font-weight: 700; margin-bottom: 5px; }
+    .perm-body  { font-size: .78rem; color: var(--muted2); line-height: 1.55; }
+    .activate-btn {
+      width: 100%; padding: 15px;
+      background: linear-gradient(90deg, #9DB4C6, #5C7386);
+      border: none; border-radius: 10px;
+      font-family: 'Inter', sans-serif; font-size: .9rem; font-weight: 700;
+      color: #0B0F14; cursor: pointer; letter-spacing: .02em;
+      transition: opacity .2s, transform .1s;
+    }
+    .activate-btn:hover  { opacity: .9; }
+    .activate-btn:active { transform: scale(.98); }
+    .activate-btn:disabled { opacity: .4; cursor: not-allowed; }
+
+    /* ── AXIS CARDS ── */
+    .axis-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+    .axis-card {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 12px 14px 14px;
+      overflow: hidden;
+    }
+    .axis-head { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+    .axis-name { font-size: .7rem; font-weight: 700; letter-spacing: .08em; }
+    .axis-tag  {
+      font-size: .58rem; font-weight: 600; padding: 2px 6px;
+      border-radius: 4px; background: rgba(255,255,255,.06);
+      color: var(--muted2); letter-spacing: .05em;
+    }
+    .axis-x .axis-name { color: var(--cyan); }
+    .axis-y .axis-name { color: var(--green); }
+    .axis-z .axis-name { color: var(--purple); }
+    .axis-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.3rem; font-weight: 600;
+      line-height: 1;
+    }
+    .axis-unit { font-size: .6rem; color: var(--muted2); margin-left: 2px; }
+
+    /* ── WAVEFORM ── */
+    .wave-card {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+    .wave-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 14px 10px;
+    }
+    .wave-title-row { display: flex; align-items: center; gap: 8px; }
+    .wave-dot { width: 8px; height: 8px; border-radius: 50%; background: #9DB4C6; }
+    .wave-title { font-size: .75rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+    .wave-legend { display: flex; gap: 10px; }
+    .wleg { font-size: .68rem; font-family: 'JetBrains Mono', monospace; display: flex; align-items: center; gap: 4px; }
+    .wleg-dot { width: 14px; height: 2px; border-radius: 1px; }
+    #waveCanvas { width: 100%; display: block; }
+    .wave-footer {
+      padding: 6px 14px 10px;
+      display: flex; justify-content: space-between;
+      font-size: .65rem; font-family: 'JetBrains Mono', monospace; color: var(--muted);
+    }
+    #fps-counter { color: var(--muted2); }
+
+    /* ── LIVE PREDICTION ── */
+    .pred-card {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 22px 18px 20px;
+      display: flex; flex-direction: column; align-items: center;
+    }
+    .pred-label { font-size: .65rem; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--muted2); margin-bottom: 16px; }
+    .pred-ring-wrap { position: relative; width: 150px; height: 150px; margin-bottom: 4px; }
+    #predRingCanvas { position: absolute; top: 0; left: 0; width: 150px; height: 150px; }
+    .pred-inner {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+    }
+    #pred-text {
+      font-size: 1.6rem; font-weight: 800; letter-spacing: -.02em;
+      text-transform: uppercase; color: var(--text);
+      transition: color .3s;
+    }
+    #pred-conf {
+      font-size: .78rem; font-family: 'JetBrains Mono', monospace;
+      color: var(--muted2); margin-top: 3px;
+    }
+
+    /* ── PROBABILITY OUTPUTS ── */
+    .prob-card {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px 16px 18px;
+    }
+    .prob-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    .prob-title { font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+    .wasm-badge {
+      display: flex; align-items: center; gap: 5px;
+      font-size: .68rem; font-weight: 600; color: var(--green);
+      padding: 4px 10px; border-radius: 999px;
+      background: rgba(157,180,198,.08); border: 1px solid rgba(157,180,198,.30);
+    }
+    .wasm-badge .bdot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: blink 1.4s ease-in-out infinite; }
+    .wasm-badge.loading { color: var(--muted2); border-color: var(--border); background: transparent; }
+    .wasm-badge.loading .bdot { background: var(--muted); animation: none; }
+    .prob-rows { display: flex; flex-direction: column; gap: 13px; }
+    .prob-row2 { display: flex; flex-direction: column; gap: 6px; }
+    .prob-meta2 { display: flex; align-items: center; justify-content: space-between; }
+    .prob-name2 { display: flex; align-items: center; gap: 7px; font-size: .82rem; font-weight: 500; }
+    .prob-dot2 { width: 8px; height: 8px; border-radius: 50%; }
+    .prob-pct2 { font-family: 'JetBrains Mono', monospace; font-size: .8rem; color: var(--muted2); }
+    .prob-track2 { height: 3px; border-radius: 999px; background: var(--s3); overflow: hidden; }
+    .prob-fill2 { height: 100%; border-radius: 999px; width: 0%; transition: width .18s ease-out; }
+
+    /* ── CONTROL CONSOLE ── */
+    .ctrl-card {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .ctrl-title { font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted2); margin-bottom: 14px; }
+    .ctrl-btn {
+      width: 100%; padding: 15px;
+      border: none; border-radius: 10px;
+      font-family: 'Inter', sans-serif; font-size: .88rem; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 8px;
+      transition: opacity .2s, transform .1s;
+      margin-bottom: 8px;
+      letter-spacing: .02em;
+    }
+    .ctrl-btn:last-child { margin-bottom: 0; }
+    .ctrl-btn:active { transform: scale(.98); }
+    .ctrl-btn:disabled { opacity: .35; cursor: not-allowed; }
+    .btn-start { background: #9DB4C6; color: #0B0F14; }
+    .btn-stop  { background: var(--s3); color: var(--text); border: 1px solid var(--border2); }
+    .btn-download { background: var(--s2); color: var(--muted2); border: 1px solid var(--border); }
+    .btn-download.ready { color: var(--cyan); border-color: rgba(157,180,198,.35); }
+    .ctrl-hint { font-size: .72rem; color: var(--muted); margin-top: 10px; line-height: 1.5; }
+    .ctrl-hint span { color: var(--amber); }
+
+    /* ── SESSION ANALYTICS ── */
+    .analytics-card {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .analytics-title { font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted2); margin-bottom: 14px; }
+    .stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+    .stat-box {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    .stat-lbl { font-size: .6rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+    .stat-val {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 1.4rem; font-weight: 600; line-height: 1;
+    }
+    .stat-val.green { color: #9DB4C6; }
+    .stat-unit { font-size: .65rem; color: var(--muted2); margin-left: 2px; font-family: 'Inter', sans-serif; }
+    .peak-axes-box {
+      background: var(--s2);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+    }
+    .peak-lbl { font-size: .6rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-bottom: 10px; }
+    .peak-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+    .peak-col .pcol-name { font-size: .7rem; font-weight: 700; letter-spacing: .05em; margin-bottom: 3px; }
+    .peak-col .pcol-val { font-family: 'JetBrains Mono', monospace; font-size: .8rem; color: var(--muted2); }
+    .peak-col.px .pcol-name { color: var(--cyan); }
+    .peak-col.py .pcol-name { color: var(--green); }
+    .peak-col.pz .pcol-name { color: var(--purple); }
+
+    /* ── SENSOR DIAGNOSTICS ── */
+    .diag-card {
+      background: var(--s1);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+    }
+    .diag-title {
+      display: flex; align-items: center; gap: 8px;
+      font-size: .7rem; font-weight: 700; letter-spacing: .1em; text-transform: uppercase;
+      color: var(--muted2); margin-bottom: 14px;
+    }
+    .diag-item { display: flex; gap: 12px; margin-bottom: 14px; }
+    .diag-item:last-child { margin-bottom: 0; }
+    .diag-num {
+      font-size: .7rem; font-weight: 700;
+      color: var(--cyan); min-width: 20px; padding-top: 1px;
+    }
+    .diag-text { font-size: .78rem; line-height: 1.6; color: var(--muted2); }
+    .diag-text strong { color: var(--text); font-weight: 600; }
+    .diag-text code { font-family: 'JetBrains Mono', monospace; font-size: .75rem; background: var(--s3); padding: 1px 5px; border-radius: 4px; color: var(--cyan); }
+    .diag-text em { font-style: italic; }
+  </style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header>
+  <div class="hdr-left">
+    <div class="hdr-icon">⚡</div>
+    <div>
+      <div class="hdr-title">Gesture<span>AI</span></div>
+      <div class="hdr-sub">Edge ML · Motion Classifier</div>
+    </div>
+  </div>
+  <div class="sensor-pill" id="sensor-pill">
+    <span class="sdot"></span>
+    <span id="sensor-pill-text">Sensor Offline</span>
+  </div>
+</header>
+
+<div class="page">
+
+  <!-- ── PERMISSION BANNER ── -->
+  <div class="perm-banner" id="perm-banner">
+    <div class="perm-top">
+      <div class="perm-icon">📱</div>
+      <div>
+        <div class="perm-title">Mobile Sensor Permission Required</div>
+        <div class="perm-body">Modern iOS (Safari) and Android browsers require explicit consent to access high-frequency motion datasets. Click "Activate Sensors" or start recording to initialize telemetry.</div>
+      </div>
+    </div>
+    <button class="activate-btn" id="activate-btn" disabled>Activate Sensors ›</button>
+  </div>
+
+  <!-- ── AXIS CARDS ── -->
+  <div class="axis-row">
+    <div class="axis-card axis-x">
+      <div class="axis-head">
+        <div class="axis-name">AXIS X</div>
+        <div class="axis-tag">Pitch</div>
+      </div>
+      <div class="axis-val"><span id="ax-x">0.000</span><span class="axis-unit">m/s²</span></div>
+    </div>
+    <div class="axis-card axis-y">
+      <div class="axis-head">
+        <div class="axis-name">AXIS Y</div>
+        <div class="axis-tag">Roll</div>
+      </div>
+      <div class="axis-val"><span id="ax-y">0.000</span><span class="axis-unit">m/s²</span></div>
+    </div>
+    <div class="axis-card axis-z">
+      <div class="axis-head">
+        <div class="axis-name">AXIS Z</div>
+        <div class="axis-tag">Yaw</div>
+      </div>
+      <div class="axis-val"><span id="ax-z">0.000</span><span class="axis-unit">m/s²</span></div>
+    </div>
+  </div>
+
+  <!-- ── WAVEFORM ── -->
+  <div class="wave-card">
+    <div class="wave-header">
+      <div class="wave-title-row">
+        <div class="wave-dot"></div>
+        <div class="wave-title">Real-Time Waveform Monitor</div>
+      </div>
+      <div class="wave-legend">
+        <div class="wleg"><div class="wleg-dot" style="background:#9DB4C6"></div>X</div>
+        <div class="wleg"><div class="wleg-dot" style="background:#5C7386"></div>Y</div>
+        <div class="wleg"><div class="wleg-dot" style="background:#D6DEE6"></div>Z</div>
+      </div>
+    </div>
+    <canvas id="waveCanvas" height="160"></canvas>
+    <div class="wave-footer">
+      <span>Grid spacing: 2.5 m/s²</span>
+      <span id="fps-counter">FPS: –</span>
+      <span>–10</span>
+    </div>
+  </div>
+
+  <!-- ── LIVE PREDICTION ── -->
+  <div class="pred-card">
+    <div class="pred-label">Live Prediction</div>
+    <div class="pred-ring-wrap">
+      <canvas id="predRingCanvas" width="300" height="300"></canvas>
+      <div class="pred-inner">
+        <div id="pred-text">–</div>
+        <div id="pred-conf">0%</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PROBABILITY OUTPUTS ── -->
+  <div class="prob-card">
+    <div class="prob-header">
+      <div class="prob-title">Model Probability Outputs</div>
+      <div class="wasm-badge loading" id="wasm-badge">
+        <span class="bdot"></span>
+        <span id="wasm-badge-text">Loading…</span>
+      </div>
+    </div>
+    <div class="prob-rows" id="prob-rows">
+      <!-- filled by JS -->
+    </div>
+  </div>
+
+  <!-- ── CONTROL CONSOLE ── -->
+  <div class="ctrl-card">
+    <div class="ctrl-title">Control Console</div>
+    <button class="ctrl-btn btn-start" id="btn-start" disabled>▶ Start Recording</button>
+    <button class="ctrl-btn btn-stop"  id="btn-stop"  disabled>■ Stop Recording</button>
+    <button class="ctrl-btn btn-download" id="btn-download" disabled>⬇ Download CSV Data</button>
+    <div class="ctrl-hint">💡 <span>Keep tab active:</span> Smartphone browsers throttle timers when backgrounded. Keep the screen active for a perfect 100Hz timing.</div>
+  </div>
+
+  <!-- ── SESSION ANALYTICS ── -->
+  <div class="analytics-card">
+    <div class="analytics-title">Session Analytics</div>
+    <div class="stats-grid">
+      <div class="stat-box">
+        <div class="stat-lbl">Duration</div>
+        <div class="stat-val"><span id="st-duration">0.00</span><span class="stat-unit">sec</span></div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-lbl">Samples Recorded</div>
+        <div class="stat-val" id="st-samples">0</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-lbl">Peak Acceleration</div>
+        <div class="stat-val green"><span id="st-peak">0.000</span><span class="stat-unit">m/s²</span></div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-lbl">Average Vector</div>
+        <div class="stat-val green"><span id="st-avg">0.000</span><span class="stat-unit">m/s²</span></div>
+      </div>
+    </div>
+    <div class="peak-axes-box">
+      <div class="peak-lbl">Peak Vector Axes [ MAX / MIN ]</div>
+      <div class="peak-row">
+        <div class="peak-col px">
+          <div class="pcol-name">X-Axis</div>
+          <div class="pcol-val" id="pk-x">0.00 / 0.00</div>
+        </div>
+        <div class="peak-col py">
+          <div class="pcol-name">Y-Axis</div>
+          <div class="pcol-val" id="pk-y">0.00 / 0.00</div>
+        </div>
+        <div class="peak-col pz">
+          <div class="pcol-name">Z-Axis</div>
+          <div class="pcol-val" id="pk-z">0.00 / 0.00</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SENSOR DIAGNOSTICS ── -->
+  <div class="diag-card">
+    <div class="diag-title">⚠ Sensor Diagnostics Guide</div>
+    <div class="diag-item">
+      <div class="diag-num">01.</div>
+      <div class="diag-text"><strong>Secure Host (HTTPS) Required:</strong> Acceleration APIs will fail silently in non-secure HTTP connections. Verify your address bar starts with <code>https://</code> or <code>localhost</code>.</div>
+    </div>
+    <div class="diag-item">
+      <div class="diag-num">02.</div>
+      <div class="diag-text"><strong>Apple iOS Permission Safari Settings:</strong> If prompts fail, navigate to <em>Settings › Safari › Motion &amp; Orientation Access</em> and toggle it ON. Reload the page.</div>
+    </div>
+    <div class="diag-item">
+      <div class="diag-num">03.</div>
+      <div class="diag-text"><strong>Chrome / Android Device Sensor Access:</strong> Android devices usually auto-allow, but if blocked, go to <em>Settings › Site Settings › Motion Sensors</em> and set to Allowed.</div>
+    </div>
+  </div>
+
+  <!-- ── FOOTER ── -->
+  <div style="text-align:center;padding:24px 0 8px;font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted2);font-family:'JetBrains Mono',monospace;">
+    Built &amp; Designed by <span style="color:#9DB4C6;font-weight:700;">RRISHIK</span>
+  </div>
+
+</div><!-- /page -->
+
+<script src="edge-impulse-standalone.js"></script>
+<script src="run-impulse.js"></script>
+<script>
+// ══════════════════════════════════════════════════
+// STATE
+// ══════════════════════════════════════════════════
+let modelReady   = false;
+let sensorActive = false;
+let recording    = false;
+
+// Confirmed via node test: input_features_count=375, use_continuous_mode=false
+// Must use classify() with a 375-float sliding window, NOT classifyContinuous()
+const INPUT_SIZE = 375;   // 125 samples × 3 axes (X,Y,Z)
+let   EI_LABELS  = [];
+
+let accelX = 0, accelY = 0, accelZ = 0;
+// Sliding window: always keep last INPUT_SIZE floats
+const sensorBuf = new Float32Array(INPUT_SIZE);
+let   bufHead   = 0;    // next write position (circular)
+let   bufFull   = false;
+
+const FREQ_HZ  = 62.5;
+const INTERVAL = 1000 / FREQ_HZ;  // 16 ms
+let   inferTimer = null;
+let   gravX = 0, gravY = 0, gravZ = 9.8;
+const ALPHA = 0.8;
+
+// Session analytics
+let sessionStart   = 0;
+let sessionSamples = 0;
+let sessionVecSum  = 0;
+let peakXmax = 0, peakXmin = 0;
+let peakYmax = 0, peakYmin = 0;
+let peakZmax = 0, peakZmin = 0;
+let peakAcc  = 0;
+let csvRows  = [];
+
+// Prediction ring state
+let ringColor = '#4a5568';
+let ringConf  = 0;
+
+// FPS counter
+let fpsFrames = 0, fpsLast = performance.now(), fpsVal = 0;
+
+// ══════════════════════════════════════════════════
+// CLASSIFIER INIT
+// run-impulse.js sets classifierInitialized=true in Module.onRuntimeInitialized,
+// but only calls Module.init() in the slow-load path. If WASM is already loaded
+// when classifier.init() is called it returns Promise.resolve() without Module.init().
+// Fix: always call Module.init() after classifier.init() resolves.
+// ══════════════════════════════════════════════════
+const classifier = new EdgeImpulseClassifier();
+
+classifier.init()
+  .then(() => {
+    // Always explicitly initialise the DSP pipeline
+    Module.init();
+    const props = classifier.getProperties();
+    EI_LABELS   = props.labels;   // ['Circle', 'Idle', 'Wave']
+    modelReady  = true;
+    document.getElementById('wasm-badge').classList.remove('loading');
+    document.getElementById('wasm-badge-text').textContent = 'WASM Online';
+    document.getElementById('activate-btn').disabled = false;
+    document.getElementById('btn-start').disabled    = false;
+    buildProbRows();
+  })
+  .catch(err => {
+    console.error('Model init failed:', err);
+    document.getElementById('wasm-badge-text').textContent = 'WASM Error';
+    // Still allow sensor activation even if model failed
+    document.getElementById('activate-btn').disabled = false;
+    document.getElementById('btn-start').disabled    = false;
+  });
+
+function buildProbRows() {
+  const colorMap = { circle: '#9DB4C6', wave: '#5C7386', idle: '#D6DEE6' };
+  const container = document.getElementById('prob-rows');
+  container.innerHTML = '';
+  EI_LABELS.forEach(lbl => {
+    const key   = lbl.toLowerCase();
+    const color = colorMap[key] || '#b388ff';
+    container.innerHTML += `
+      <div class="prob-row2">
+        <div class="prob-meta2">
+          <div class="prob-name2">
+            <div class="prob-dot2" id="pdot-${key}" style="background:${color};opacity:.4"></div>
+            <span>${lbl}</span>
+          </div>
+          <div class="prob-pct2" id="pct2-${key}">0.0%</div>
+        </div>
+        <div class="prob-track2">
+          <div class="prob-fill2" id="fill2-${key}" style="background:${color}"></div>
+        </div>
+      </div>`;
+  });
+}
+
+// ══════════════════════════════════════════════════
+// SENSOR SETUP
+// ══════════════════════════════════════════════════
+document.getElementById('activate-btn').addEventListener('click', startSensors);
+document.getElementById('btn-start').addEventListener('click', () => {
+  if (!sensorActive) startSensors();
+  else startRecording();
+});
+document.getElementById('btn-stop').addEventListener('click', stopRecording);
+document.getElementById('btn-download').addEventListener('click', downloadCSV);
+
+async function startSensors() {
+  if (sensorActive) { startRecording(); return; }
+  document.getElementById('activate-btn').disabled = true;
+  document.getElementById('activate-btn').textContent = 'Initializing…';
+
+  // Tier 1: W3C LinearAccelerationSensor (gravity already removed)
+  if ('LinearAccelerationSensor' in window) {
+    try {
+      const perm = await navigator.permissions.query({ name: 'accelerometer' });
+      if (perm.state !== 'denied') {
+        const sensor = new LinearAccelerationSensor({ frequency: FREQ_HZ });
+        sensor.addEventListener('reading', () => {
+          accelX = sensor.x ?? 0;
+          accelY = sensor.y ?? 0;
+          accelZ = sensor.z ?? 0;
+        });
+        sensor.addEventListener('error', e => console.warn('GenericSensor:', e.error));
+        await sensor.start();
+        onSensorOnline('Generic Sensor');
+        return;
+      }
+    } catch(e) { console.warn('Tier1 failed:', e.message); }
+  }
+
+  // Tier 2 + 3: DeviceMotionEvent — smart gravity fallback in one listener
+  if ('DeviceMotionEvent' in window) {
+    try {
+      if (typeof DeviceMotionEvent.requestPermission === 'function') {
+        const state = await DeviceMotionEvent.requestPermission();
+        if (state !== 'granted') throw new Error('Permission denied');
+      }
+      window.addEventListener('devicemotion', function(e) {
+        // Use e.acceleration if available and non-null, else apply gravity filter
+        const a  = e.acceleration;
+        const ag = e.accelerationIncludingGravity;
+        if (a && a.x !== null && a.y !== null && a.z !== null) {
+          accelX = a.x; accelY = a.y; accelZ = a.z;
+        } else if (ag) {
+          gravX = ALPHA * gravX + (1 - ALPHA) * (ag.x ?? 0);
+          gravY = ALPHA * gravY + (1 - ALPHA) * (ag.y ?? 0);
+          gravZ = ALPHA * gravZ + (1 - ALPHA) * (ag.z ?? 0);
+          accelX = (ag.x ?? 0) - gravX;
+          accelY = (ag.y ?? 0) - gravY;
+          accelZ = (ag.z ?? 0) - gravZ;
+        }
+      });
+      onSensorOnline('DeviceMotion');
+      return;
+    } catch(e) { console.warn('Tier2/3 failed:', e.message); }
+  }
+
+  document.getElementById('activate-btn').textContent = '⚠ No Sensor – Retry';
+  document.getElementById('activate-btn').disabled = false;
+}
+
+function onSensorOnline(mode) {
+  sensorActive = true;
+  document.getElementById('sensor-pill').classList.add('online');
+  document.getElementById('sensor-pill-text').textContent = 'Sensor Online';
+  document.getElementById('activate-btn').textContent = '✓ Sensors Active';
+  startInferenceLoop();
+}
+
+// ══════════════════════════════════════════════════
+// INFERENCE LOOP
+// use_continuous_mode=false → must use classify() with full 375-float window.
+// We maintain a circular buffer of the last 375 floats and call classify()
+// every tick once the buffer is full.
+// ══════════════════════════════════════════════════
+function startInferenceLoop() {
+  bufHead = 0;
+  bufFull = false;
+  if (inferTimer) clearInterval(inferTimer);
+  inferTimer = setInterval(tick, INTERVAL);
+}
+
+function tick() {
+  // Write newest sample into circular buffer
+  sensorBuf[bufHead]     = accelX;
+  sensorBuf[bufHead + 1] = accelY;
+  sensorBuf[bufHead + 2] = accelZ;
+  bufHead = (bufHead + 3) % INPUT_SIZE;
+  if (bufHead === 0) bufFull = true;
+
+  if (modelReady && bufFull) {
+    // Flatten circular buffer into time-ordered array starting at bufHead
+    const ordered = new Float32Array(INPUT_SIZE);
+    ordered.set(sensorBuf.subarray(bufHead));
+    ordered.set(sensorBuf.subarray(0, bufHead), INPUT_SIZE - bufHead);
+    runClassifier(ordered);
+  }
+}
+
+function runClassifier(data) {
+  try {
+    // classify() is correct: use_continuous_mode=false, input_features_count=375
+    const result = classifier.classify(Array.from(data), false);
+    let bestLabel = '', bestVal = -1;
+    const probs = {};
+    result.results.forEach(item => {
+      probs[item.label] = item.value;
+      if (item.value > bestVal) { bestVal = item.value; bestLabel = item.label; }
+    });
+    updatePrediction(bestLabel, bestVal, probs);
+  } catch(e) {
+    console.warn('Classifier error:', e.message);
+  }
+}
+
+// ══════════════════════════════════════════════════
+// RECORDING
+// ══════════════════════════════════════════════════
+function startRecording() {
+  recording      = true;
+  sessionStart   = Date.now();
+  sessionSamples = 0;
+  sessionVecSum  = 0;
+  peakXmax = peakXmin = peakYmax = peakYmin = peakZmax = peakZmin = 0;
+  peakAcc  = 0;
+  csvRows  = [['timestamp_ms','accel_x','accel_y','accel_z','magnitude']];
+  document.getElementById('btn-start').disabled    = true;
+  document.getElementById('btn-stop').disabled     = false;
+  document.getElementById('btn-download').disabled = true;
+  document.getElementById('btn-download').classList.remove('ready');
+}
+
+function stopRecording() {
+  recording = false;
+  document.getElementById('btn-start').disabled = false;
+  document.getElementById('btn-stop').disabled  = true;
+  if (csvRows.length > 1) {
+    document.getElementById('btn-download').disabled = false;
+    document.getElementById('btn-download').classList.add('ready');
+  }
+}
+
+function downloadCSV() {
+  const blob = new Blob([csvRows.map(r => r.join(',')).join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'aero100_session_' + Date.now() + '.csv';
+  a.click();
+}
+
+// ══════════════════════════════════════════════════
+// PREDICTION UI
+// ══════════════════════════════════════════════════
+const colorMap = { circle: '#9DB4C6', wave: '#5C7386', idle: '#D6DEE6' };
+
+function updatePrediction(label, conf, probs) {
+  const key = label.toLowerCase();
+  document.getElementById('pred-text').textContent = label || '–';
+  document.getElementById('pred-conf').textContent = conf >= 0 ? (conf * 100).toFixed(0) + '%' : '0%';
+  ringColor = colorMap[key] || '#4a5568';
+  ringConf  = conf;
+  Object.entries(probs).forEach(([lbl, val]) => {
+    const k    = lbl.toLowerCase();
+    const fill = document.getElementById('fill2-' + k);
+    const pct  = document.getElementById('pct2-'  + k);
+    const dot  = document.getElementById('pdot-'  + k);
+    if (fill) fill.style.width  = (val * 100).toFixed(1) + '%';
+    if (pct)  pct.textContent   = (val * 100).toFixed(1) + '%';
+    if (dot)  dot.style.opacity = (k === key) ? '1' : '0.4';
+  });
+}
+
+// ══════════════════════════════════════════════════
+// CANVAS WAVEFORM
+// ══════════════════════════════════════════════════
+const wCanvas = document.getElementById('waveCanvas');
+const wCtx    = wCanvas.getContext('2d');
+const HISTORY = 280;
+const histX   = new Array(HISTORY).fill(0);
+const histY   = new Array(HISTORY).fill(0);
+const histZ   = new Array(HISTORY).fill(0);
+
+function resizeWave() {
+  wCanvas.width  = wCanvas.offsetWidth * devicePixelRatio;
+  wCanvas.height = wCanvas.offsetHeight * devicePixelRatio;
+}
+resizeWave();
+window.addEventListener('resize', resizeWave);
+
+function drawLine(hist, color, w, h) {
+  wCtx.beginPath();
+  wCtx.strokeStyle = color;
+  wCtx.lineWidth   = 1.5 * devicePixelRatio;
+  const mid = h / 2, scale = h / 20;
+  hist.forEach((v, i) => {
+    const x = (i / (HISTORY - 1)) * w;
+    const y = mid - v * scale;
+    i === 0 ? wCtx.moveTo(x, y) : wCtx.lineTo(x, y);
+  });
+  wCtx.stroke();
+}
+
+// ══════════════════════════════════════════════════
+// PREDICTION RING
+// ══════════════════════════════════════════════════
+const rCanvas = document.getElementById('predRingCanvas');
+const rCtx    = rCanvas.getContext('2d');
+rCanvas.width  = 300;
+rCanvas.height = 300;
+
+function drawRing() {
+  const W = rCanvas.width, H = rCanvas.height;
+  const cx = W / 2, cy = H / 2, r = W * 0.4;
+  rCtx.clearRect(0, 0, W, H);
+  rCtx.beginPath();
+  rCtx.arc(cx, cy, r, 0, Math.PI * 2);
+  rCtx.strokeStyle = 'rgba(255,255,255,0.08)';
+  rCtx.lineWidth   = 10;
+  rCtx.stroke();
+  if (ringConf > 0.01) {
+    rCtx.beginPath();
+    rCtx.arc(cx, cy, r, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * ringConf);
+    rCtx.strokeStyle = ringColor;
+    rCtx.lineWidth   = 10;
+    rCtx.lineCap     = 'round';
+    rCtx.shadowColor = ringColor;
+    rCtx.shadowBlur  = 16;
+    rCtx.stroke();
+    rCtx.shadowBlur  = 0;
+    rCtx.lineCap     = 'butt';
+  }
+}
+
+// ══════════════════════════════════════════════════
+// SESSION STATS
+// ══════════════════════════════════════════════════
+let lastStatsTs = 0;
+function updateStats(ts) {
+  if (!recording) return;
+  const mag = Math.sqrt(accelX * accelX + accelY * accelY + accelZ * accelZ);
+  sessionSamples++;
+  sessionVecSum += mag;
+  if (mag > peakAcc) peakAcc = mag;
+  if (accelX > peakXmax) peakXmax = accelX;
+  if (accelX < peakXmin) peakXmin = accelX;
+  if (accelY > peakYmax) peakYmax = accelY;
+  if (accelY < peakYmin) peakYmin = accelY;
+  if (accelZ > peakZmax) peakZmax = accelZ;
+  if (accelZ < peakZmin) peakZmin = accelZ;
+  const elapsed = Date.now() - sessionStart;
+  csvRows.push([elapsed, accelX.toFixed(4), accelY.toFixed(4), accelZ.toFixed(4), mag.toFixed(4)]);
+  if (ts - lastStatsTs > 100) {
+    lastStatsTs = ts;
+    document.getElementById('st-duration').textContent = (elapsed / 1000).toFixed(2);
+    document.getElementById('st-samples').textContent  = sessionSamples;
+    document.getElementById('st-peak').textContent     = peakAcc.toFixed(3);
+    document.getElementById('st-avg').textContent      = (sessionVecSum / sessionSamples).toFixed(3);
+    document.getElementById('pk-x').textContent        = peakXmax.toFixed(2) + ' / ' + peakXmin.toFixed(2);
+    document.getElementById('pk-y').textContent        = peakYmax.toFixed(2) + ' / ' + peakYmin.toFixed(2);
+    document.getElementById('pk-z').textContent        = peakZmax.toFixed(2) + ' / ' + peakZmin.toFixed(2);
+  }
+}
+
+// ══════════════════════════════════════════════════
+// MAIN RENDER LOOP (60 fps)
+// ══════════════════════════════════════════════════
+function frame(ts) {
+  fpsFrames++;
+  if (ts - fpsLast >= 1000) {
+    fpsVal = fpsFrames; fpsFrames = 0; fpsLast = ts;
+    document.getElementById('fps-counter').textContent = 'FPS: ' + fpsVal;
+  }
+  document.getElementById('ax-x').textContent = accelX.toFixed(3);
+  document.getElementById('ax-y').textContent = accelY.toFixed(3);
+  document.getElementById('ax-z').textContent = accelZ.toFixed(3);
+
+  histX.shift(); histX.push(accelX);
+  histY.shift(); histY.push(accelY);
+  histZ.shift(); histZ.push(accelZ);
+
+  const w = wCanvas.width, h = wCanvas.height;
+  wCtx.clearRect(0, 0, w, h);
+  wCtx.strokeStyle = 'rgba(255,255,255,0.05)';
+  wCtx.lineWidth   = 1;
+  [-7.5, -5, -2.5, 0, 2.5, 5, 7.5].forEach(v => {
+    const y = h / 2 - v * (h / 20);
+    wCtx.beginPath(); wCtx.moveTo(0, y); wCtx.lineTo(w, y); wCtx.stroke();
+  });
+  drawLine(histX, 'rgba(157,180,198,.90)', w, h);
+  drawLine(histY, 'rgba(92,115,134,.85)',  w, h);
+  drawLine(histZ, 'rgba(214,222,230,.70)', w, h);
+
+  drawRing();
+  updateStats(ts);
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
